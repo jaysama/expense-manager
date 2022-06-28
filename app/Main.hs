@@ -418,14 +418,14 @@ showWalletMenu index (user, wallets, transactions) = do
             txType <- getNumeric "Input: " (1,2)
 
             putStrAndFlush "Amount: "
-            amount <- getNumeric "Amount: " (0,0)
+            amount <- getDouble "Amount: "
 
             putStrAndFlush "Description: "
             desc <- getLine
 
             let id = if length transactionList == 0 then "1" else show ((read a) + 1)
             let txTyp = if txType == 1 then "Income" else "Expense"
-            let newTrx = Transaction { trxId = id, date = date, transactionType = txTyp, amount = fromIntegral amount, description = desc }
+            let newTrx = Transaction { trxId = id, date = date, transactionType = txTyp, amount = amount, description = desc }
             let newList = transactionList ++ [newTrx]
             let (transactionFront, transactionBack) = splitAt index transactions
             let newTransactionList = transactionFront ++ [newList] ++ tail transactionBack
@@ -588,7 +588,7 @@ showWalletMenu index (user, wallets, transactions) = do
                     showWalletMenu index (user, wallets, transactions) 
                 4 -> do
                     putStrAndFlush "Filter by amount: "
-                    filter <- getNumeric "Filter by amount: " (0,0)
+                    filter <- getDouble "Filter by amount: "
                     filterTransaction choice (show filter) transactionList
 
                     logToFile ("Filtered transaction with amount of " ++ show filter ++ " in wallet " ++ nam)
