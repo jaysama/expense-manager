@@ -19,11 +19,16 @@ walletInfoFileName = "WalletInfo.txt"
 --------------------------------------
 -- INPUT UTILS
 --------------------------------------
+putStrAndFlush :: String -> IO()
+putStrAndFlush str = do
+    putStrAndFlush str
+    hFlush stdout
+
 getDouble :: String -> IO Double
 getDouble str = do
     val <- getLine
     if (readMaybe val :: Maybe Double) == Nothing then do
-        putStr ("Put number!\n" ++ str)
+        putStrAndFlush ("Put number!\n" ++ str)
         getDouble str
     else
         return (read val :: Double)
@@ -32,11 +37,11 @@ getNumeric :: String -> (Int, Int) -> IO Int
 getNumeric str (least, most) = do
     val <- getLine
     if (readMaybe val :: Maybe Int) == Nothing then do
-        putStr ("Put number!\n" ++ str)
+        putStrAndFlush ("Put number!\n" ++ str)
         getNumeric str (least, most)
     else
         if (read val < least || read val > most) && least /= most then do
-            putStr ("Insert a valid number!\n" ++ str)
+            putStrAndFlush ("Insert a valid number!\n" ++ str)
             getNumeric str (least, most)
         else
             return (read val)
@@ -44,7 +49,7 @@ checkPassword :: String -> String -> IO ()
 checkPassword pass str = do
     val <- getPassword
     if pass /= val then do
-        putStr ("Wrong password!\n" ++ str)
+        putStrAndFlush ("Wrong password!\n" ++ str)
         checkPassword pass str
         logToFile "Login attempted with failure"
     else
@@ -135,13 +140,13 @@ checkPasswordValid pass = length pass >= 8 && any isAlpha pass && any isNumber p
 
 passwordSetup :: String -> IO UserInfo
 passwordSetup name = do
-    putStr "Insert password (Min. 8 characters, alphanumeric): "
+    putStrAndFlush "Insert password (Min. 8 characters, alphanumeric): "
     pass <- getPassword
 
     if checkPasswordValid pass
         then
         ( do
-            putStr "Repeat password: "
+            putStrAndFlush "Repeat password: "
             repeatPass <- getPassword
 
             if pass /= repeatPass
@@ -164,7 +169,7 @@ firstRegister = do
     putStrLn "Welcome to Expense Manager"
     putStrLn "=========================="
     putStrLn "Please enter your info for initial setup\n"
-    putStr "Insert your name: "
+    putStrAndFlush "Insert your name: "
     name <- getLine
     user <- passwordSetup name
     saveUserData user
@@ -179,7 +184,7 @@ authenticate (userData, wallets, transactions) = do
     putStrLn "\n=================="
     putStrLn ("Welcome " ++ name)
     putStrLn "=================="
-    putStr "Insert your password to access your account: "
+    putStrAndFlush "Insert your password to access your account: "
     checkPassword pass "Insert your password to access your account: "
 
     logToFile ("User " ++ name ++ " successfully logged in")
@@ -190,13 +195,13 @@ authenticate (userData, wallets, transactions) = do
 --------------------------------------
 addWallet :: UserData -> IO ()
 addWallet (userData, wallets, transactions) = do
-    putStr "Wallet name: "
+    putStrAndFlush "Wallet name: "
     wName <- getLine
 
-    putStr "Currency: "
+    putStrAndFlush "Currency: "
     cName <- getLine
 
-    putStr "Initial balance: "
+    putStrAndFlush "Initial balance: "
     bal <- getDouble "Initial balance: "
 
     let newWallet = [Wallet {walletName = wName, currency = cName}]
@@ -280,7 +285,7 @@ addSpace x = " " ++ addSpace (x-1)
 printLine :: Int -> IO()
 printLine 0 = putStrLn ""
 printLine x = do
-    putStr "-"
+    putStrAndFlush "-"
     printLine (x-1)
 
 printTransactionTitle :: IO()
@@ -348,7 +353,7 @@ showMainMenu (UserInfo {userName = name, password = pass}, wallets, transactions
 
     putStrLn "\nWhat to do?"
     putStrLn "1. Select wallet    2. Add wallet       3. Delete wallet      4. Exit"
-    putStr "Input: "
+    putStrAndFlush "Input: "
     input <- getNumeric "Input: " (1, 4)
 
     let user = UserInfo {userName = name, password = pass}
@@ -356,7 +361,7 @@ showMainMenu (UserInfo {userName = name, password = pass}, wallets, transactions
         1 -> do
             putStrLn "\nSelect a wallet"
             showWallets 1 wallets
-            putStr "Input ID: "
+            putStrAndFlush "Input ID: "
             input <- getNumeric "Input ID: " (1, length wallets + 1)
 
             if input <= length wallets then do
@@ -369,7 +374,7 @@ showMainMenu (UserInfo {userName = name, password = pass}, wallets, transactions
         3 -> do
             putStrLn "\nWhich wallet?"
             showWallets 1 wallets
-            putStr "Input ID: "
+            putStrAndFlush "Input ID: "
             input <- getNumeric "Input ID: " (1, length wallets + 1)
 
             if input <= length wallets then do
@@ -397,7 +402,7 @@ showWalletMenu index (user, wallets, transactions) = do
     putStrLn "\nWhat to do?"
     putStrLn "1. Add transaction    2. Edit transaction     3. Delete transaction"
     putStrLn "4. Show transactions  5. Filter transaction   6. Go back"
-    putStr "Input: "
+    putStrAndFlush "Input: "
     input <- getNumeric "Input: " (1,6)
 
     let wallet = Wallet { walletName = nam, currency = cur }
@@ -409,13 +414,13 @@ showWalletMenu index (user, wallets, transactions) = do
             date <- formatTime defaultTimeLocale "%d/%m/%Y" <$> getZonedTime
 
             putStrLn "Is it\n1. Income   2. Expense"
-            putStr "Input: "
+            putStrAndFlush "Input: "
             txType <- getNumeric "Input: " (1,2)
 
-            putStr "Amount: "
+            putStrAndFlush "Amount: "
             amount <- getNumeric "Amount: " (0,0)
 
-            putStr "Description: "
+            putStrAndFlush "Description: "
             desc <- getLine
 
             let id = if length transactionList == 0 then "1" else show ((read a) + 1)
@@ -432,7 +437,7 @@ showWalletMenu index (user, wallets, transactions) = do
             showWalletMenu index (user, wallets, newTransactionList)
 
         2 -> do
-            putStr "Transaction ID: "
+            putStrAndFlush "Transaction ID: "
             txId <- getNumeric "Transaction ID: " (0, 0)
             let findTrx = findTransactionById 0 (show txId) transactionList
 
@@ -448,11 +453,11 @@ showWalletMenu index (user, wallets, transactions) = do
 
                     putStrLn "\nWhat to change?"
                     putStrLn "1. Date         2. Type     3. Amount\n4. Description  5. Cancel"
-                    putStr "Input: "
+                    putStrAndFlush "Input: "
                     change <- getNumeric "Input: " (1,5)
                     case change of
                         1 -> do
-                            putStr "Insert new date (dd/mm/yyyy): "
+                            putStrAndFlush "Insert new date (dd/mm/yyyy): "
                             update <- getLine
 
                             let newTrans = updateTransaction 1 update (transactionList !! trxIndex)
@@ -467,7 +472,7 @@ showWalletMenu index (user, wallets, transactions) = do
                             putStrLn "\nTransaction updated!"
                             showWalletMenu index (user, wallets, newAllTransaction)
                         2 -> do
-                            putStr "Is it\n1. Income    2. Expense\nInput: "
+                            putStrAndFlush "Is it\n1. Income    2. Expense\nInput: "
                             update <- getNumeric "Input: " (1,2)
 
                             let txType = if update == 1 then "Income" else "Expense"
@@ -483,7 +488,7 @@ showWalletMenu index (user, wallets, transactions) = do
                             putStrLn "\nTransaction updated!"
                             showWalletMenu index (user, wallets, newAllTransaction)
                         3 -> do
-                            putStr "Insert new amount: "
+                            putStrAndFlush "Insert new amount: "
                             update <- getDouble "Insert new amount: "
 
                             let newTrans = updateTransaction 3 (show update) (transactionList !! trxIndex)
@@ -498,7 +503,7 @@ showWalletMenu index (user, wallets, transactions) = do
                             putStrLn "\nTransaction updated!"
                             showWalletMenu index (user, wallets, newAllTransaction)
                         4 -> do
-                            putStr "Insert new description: "
+                            putStrAndFlush "Insert new description: "
                             update <- getLine
 
                             let newTrans = updateTransaction 4 update (transactionList !! trxIndex)
@@ -515,7 +520,7 @@ showWalletMenu index (user, wallets, transactions) = do
                         _ -> showWalletMenu index (user, wallets, transactions)
 
         3 -> do
-            putStr "Transaction ID: "
+            putStrAndFlush "Transaction ID: "
             txId <- getNumeric "Transaction ID: " (0, 0)
             let findTrx = findTransactionById 0 (show txId) transactionList
 
@@ -544,59 +549,59 @@ showWalletMenu index (user, wallets, transactions) = do
             else
                 putStrLn "\nNo transactions in this wallet"
 
-            putStr "\nPress enter to continue..."
+            putStrAndFlush "\nPress enter to continue..."
             wait <- getLine
             showWalletMenu index (user, wallets, transactions)
         5 -> do
             putStrLn "Filter by:"
             putStrLn "1. ID       2. Date         3. Type\n4. Amount   5. Description  6. Cancel"
-            putStr "Input: "
+            putStrAndFlush "Input: "
             choice <- getNumeric "Input: " (1,6)
 
             case choice of
                 1 -> do
-                    putStr "Filter by ID: "
+                    putStrAndFlush "Filter by ID: "
                     filter <- getLine
                     filterTransaction choice filter transactionList
 
                     logToFile ("Filtered transaction with ID " ++ show filter ++ " in wallet " ++ nam)
-                    putStr "\nPress enter to continue..."
+                    putStrAndFlush "\nPress enter to continue..."
                     wait <- getLine
                     showWalletMenu index (user, wallets, transactions) 
                 2 -> do
-                    putStr "Filter by date: "
+                    putStrAndFlush "Filter by date: "
                     filter <- getLine
                     filterTransaction choice filter transactionList
 
                     logToFile ("Filtered transaction with date " ++ filter ++ " in wallet " ++ nam)
-                    putStr "\nPress enter to continue..."
+                    putStrAndFlush "\nPress enter to continue..."
                     wait <- getLine
                     showWalletMenu index (user, wallets, transactions) 
                 3 -> do
-                    putStr "1. Income  2. Expense\nInput: "
+                    putStrAndFlush "1. Income  2. Expense\nInput: "
                     filter <- getNumeric "Input: " (1,2)
                     filterTransaction choice (if filter == 1 then "Income" else "Expense") transactionList
 
                     logToFile ("Filtered transaction with type of " ++ (if filter == 1 then "Income" else "Expense") ++ " in wallet " ++ nam)
-                    putStr "\nPress enter to continue..."
+                    putStrAndFlush "\nPress enter to continue..."
                     wait <- getLine
                     showWalletMenu index (user, wallets, transactions) 
                 4 -> do
-                    putStr "Filter by amount: "
+                    putStrAndFlush "Filter by amount: "
                     filter <- getNumeric "Filter by amount: " (0,0)
                     filterTransaction choice (show filter) transactionList
 
                     logToFile ("Filtered transaction with amount of " ++ show filter ++ " in wallet " ++ nam)
-                    putStr "\nPress enter to continue..."
+                    putStrAndFlush "\nPress enter to continue..."
                     wait <- getLine
                     showWalletMenu index (user, wallets, transactions)
                 5 -> do
-                    putStr "Filter by description: "
+                    putStrAndFlush "Filter by description: "
                     filter <- getLine
                     filterTransaction choice filter transactionList
 
                     logToFile ("Filtered transaction containing description " ++ filter ++ " in wallet " ++ nam)
-                    putStr "\nPress enter to continue..."
+                    putStrAndFlush "\nPress enter to continue..."
                     wait <- getLine
                     showWalletMenu index (user, wallets, transactions) 
                 _ -> showWalletMenu index (user, wallets, transactions) 
