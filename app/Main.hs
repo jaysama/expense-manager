@@ -6,6 +6,8 @@ import System.IO
 import Data.List
 import Text.Read
 import Data.Time
+import Control.Monad.Trans.State.Lazy (StateT(runStateT), get, runState)
+import Control.Monad.Trans.Class (lift)
 
 data UserInfo = UserInfo {userName :: String, password :: String} deriving (Show)
 data Wallet = Wallet {walletName :: String, currency :: String} deriving (Show, Eq)
@@ -21,7 +23,7 @@ walletInfoFileName = "WalletInfo.txt"
 --------------------------------------
 putStrAndFlush :: String -> IO()
 putStrAndFlush str = do
-    putStrAndFlush str
+    putStr str
     hFlush stdout
 
 getDouble :: String -> IO Double
@@ -47,13 +49,19 @@ getNumeric str (least, most) = do
             return (read val)
 checkPassword :: String -> String -> IO ()
 checkPassword pass str = do
-    val <- getPassword
-    if pass /= val then do
+    checkStateResult <- runStateT checkPasswordState pass
+    if fst checkStateResult then
+        return()
+    else do
         putStrAndFlush ("Wrong password!\n" ++ str)
         checkPassword pass str
         logToFile "Login attempted with failure"
-    else
-        return()
+
+checkPasswordState :: StateT String IO Bool
+checkPasswordState = do
+    val <- Control.Monad.Trans.Class.lift getPassword
+    pass <- Control.Monad.Trans.State.Lazy.get
+    return (val == pass)
 
 withEcho :: Bool -> IO a -> IO a
 withEcho echo action = do
